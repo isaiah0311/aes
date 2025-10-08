@@ -1,0 +1,70 @@
+{
+    "version": "2.0.0",
+    "inputs": [
+        {
+            "id": "configuration",
+            "type": "pickString",
+            "description": "Choose configuration",
+            "options": [
+                "debug",
+                "release"
+            ],
+            "default": "debug"
+        },
+        {
+            "id": "platform-windows",
+            "type": "pickString",
+            "description": "Choose platform",
+            "options": [
+                "win32",
+                "x64"
+            ],
+            "default": "x64"
+        },
+        {
+            "id": "platform-linux",
+            "type": "pickString",
+            "description": "Choose platform",
+            "options": [
+                "x86",
+                "x64"
+            ],
+            "default": "x64"
+        }
+    ],
+    "tasks": [
+        {
+            "label": "Build",
+            "type": "shell",
+            "group": "build",
+            "windows": {
+                "command": "msbuild",
+                "args": [
+                    "/p:Configuration=${input:configuration}",
+                    "/p:Platform=${input:platform-windows}"
+                ]
+            },
+            "linux": {
+                "command": "make",
+                "args": [
+                    "CONFIGURATION=${input:configuration}",
+                    "PLATFORM=${input:platform-linux}"
+                ]
+            }
+        },
+        {
+            "label": "Clean",
+            "type": "shell",
+            "group": "build",
+            "windows": {
+                "command": "Remove-Item -Path obj,bin -Recurse -Force"
+            },
+            "linux": {
+                "command": "make clean"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        }
+    ]
+}

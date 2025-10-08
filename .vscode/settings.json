@@ -1,0 +1,28 @@
+{
+    "editor.formatOnSave": true,
+    "editor.rulers": [
+        80
+    ],
+    "files.eol": "auto",
+    "files.insertFinalNewline": true,
+    "C_Cpp.clang_format_style": "file",
+    "[c]": {
+        "editor.defaultFormatter": "ms-vscode.cpptools"
+    },
+    "[jsonc]": {
+        "editor.insertSpaces": true,
+        "editor.tabSize": 4
+    },
+    "[makefile]": {
+        "editor.insertSpaces": false,
+        "editor.tabSize": 4
+    },
+    "[markdown]": {
+        "editor.insertSpaces": true,
+        "editor.tabSize": 4
+    },
+    "[xml]": {
+        "editor.insertSpaces": true,
+        "editor.tabSize": 2
+    }
+}
