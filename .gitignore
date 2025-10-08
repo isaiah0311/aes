@@ -1,0 +1,16 @@
+# File exclusions
+*.a
+*.dll
+*.exe
+*.lib
+*.o
+*.obj
+*.pdb
+*.res
+*.so
+
+# Folder exclusions
+bin
+include
+lib
+obj
