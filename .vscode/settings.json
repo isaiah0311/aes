@@ -3,10 +3,16 @@
     "editor.rulers": [
         80
     ],
+    "files.associations": {
+        "*.h": "c"
+    },
     "files.eol": "auto",
     "files.insertFinalNewline": true,
     "C_Cpp.clang_format_style": "file",
     "[c]": {
+        "editor.defaultFormatter": "ms-vscode.cpptools"
+    },
+    "[h]": {
         "editor.defaultFormatter": "ms-vscode.cpptools"
     },
     "[jsonc]": {
