@@ -11,6 +11,7 @@ An implementation of AES in C.
 │   └── release                <- Binaries compiled with optimization
 │       ├── x64                <- 64-bit release binaries
 │       └── x86                <- 32-bit release binaries
+├── res                        <- Resource files
 ├── src                        <- Source files
 ├── .clang-format              <- Coding format file
 ├── .gitignore                 <- Repository ignores

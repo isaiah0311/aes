@@ -7,6 +7,8 @@
 
 #include "aes.h"
 
+#include <string.h>
+
 static const uint8_t s[256] = { 0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5,
     0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76, 0xCA, 0x82, 0xC9, 0x7D,
     0xFA, 0x59, 0x47, 0xF0, 0xAD, 0xD4, 0xA2, 0xAF, 0x9C, 0xA4, 0x72, 0xC0,
@@ -70,7 +72,7 @@ static uint32_t g(uint32_t word, int round) {
  * \param[in] key 128-bit key.
  * \param[out] expanded 44-word expanded key.
  */
-void expand_key(uint8_t key[16], uint32_t expanded[44]) {
+static void expand_key(uint8_t key[16], uint32_t expanded[44]) {
     for (int i = 0; i < 4; ++i) {
         expanded[i] = (key[i * 4] << 24) | (key[(i * 4) + 1] << 16) |
             (key[(i * 4) + 2] << 8) | key[(i * 4) + 3];
@@ -83,4 +85,195 @@ void expand_key(uint8_t key[16], uint32_t expanded[44]) {
             expanded[i] = expanded[i - 1] ^ expanded[i - 4];
         }
     }
+}
+
+/**
+ * Converts a block into a state matrix.
+ *
+ * \param[in] bytes 16-byte block.
+ * \param[out] state 4x4 byte matrix.
+ */
+static void bytes_to_state(const uint8_t bytes[16], uint8_t state[4][4]) {
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            state[j][i] = bytes[(i * 4) + j];
+        }
+    }
+}
+
+/**
+ * Converts a state matrix into a block.
+ *
+ * \param[in] state 4x4 byte matrix.
+ * \param[out] bytes 16-byte block.
+ */
+static void state_to_bytes(uint8_t state[4][4], uint8_t bytes[16]) {
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            bytes[(i * 4) + j] = state[j][i];
+        }
+    }
+}
+
+/**
+ * XORs a state matrix with the key for a given round.
+ *
+ * \param[in,out] state 4x4 byte matrix.
+ * \param[in] expanded 44-word expanded key.
+ * \param[in] round Round number.
+ */
+static void add_round_key(uint8_t state[4][4], const uint32_t expanded[44],
+    int round) {
+    for (int i = 0; i < 4; ++i) {
+        const uint32_t word = expanded[(round * 4) + i];
+        state[0][i] ^= (word >> 24) & 0xFF;
+        state[1][i] ^= (word >> 16) & 0xFF;
+        state[2][i] ^= (word >> 8) & 0xFF;
+        state[3][i] ^= (word) & 0xFF;
+    }
+}
+
+/**
+ * Substitutes the bytes of a state matrix.
+ *
+ * \param[in,out] state 4x4 byte matrix.
+ */
+static void sub_bytes(uint8_t state[4][4]) {
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            state[i][j] = s[state[i][j]];
+        }
+    }
+}
+
+/**
+ * Shifts the rows of a state matrix.
+ *
+ * \param[in,out] state 4x4 byte matrix.
+ */
+static void shift_rows(uint8_t state[4][4]) {
+    uint8_t tmp1, tmp2;
+
+    tmp1 = state[1][0];
+    for (int i = 0; i < 3; ++i) {
+        state[1][i] = state[1][i + 1];
+    }
+
+    state[1][3] = tmp1;
+
+    tmp1 = state[2][0];
+    tmp2 = state[2][1];
+    state[2][0] = state[2][2];
+    state[2][1] = state[2][3];
+    state[2][2] = tmp1;
+    state[2][3] = tmp2;
+
+    tmp1 = state[3][3];
+    for (int i = 3; i > 0; --i) {
+        state[3][i] = state[3][i - 1];
+    }
+
+    state[3][0] = tmp1;
+}
+
+/**
+ * Performs multiplication in the Galois Field GF(2^8).
+ *
+ * \param[in,out] state 4x4 byte matrix.
+ */
+static uint8_t gf(uint8_t a, uint8_t b) {
+    uint8_t p = 0;
+    for (int i = 0; i < 8; ++i) {
+        if (b & 1) {
+            p ^= a;
+        }
+
+        const uint8_t hi_bit = a & 0x80;
+        a <<= 1;
+
+        if (hi_bit) {
+            a ^= 0x1B;
+        }
+
+        b >>= 1;
+    }
+
+    return p;
+}
+
+/**
+ * Mixes the columns of a state matrix.
+ *
+ * \param[in,out] state 4x4 byte matrix.
+ */
+static void mix_columns(uint8_t state[4][4]) {
+    for (int i = 0; i < 4; ++i) {
+        const uint8_t a[4] = { state[0][i], state[1][i], state[2][i],
+            state[3][i] };
+        const uint8_t b[4] = { gf(a[0], 2) ^ gf(a[1], 3) ^ a[2] ^ a[3],
+            a[0] ^ gf(a[1], 2) ^ gf(a[2], 3) ^ a[3],
+            a[0] ^ a[1] ^ gf(a[2], 2) ^ gf(a[3], 3),
+            gf(a[0], 3) ^ a[1] ^ a[2] ^ gf(a[3], 2) };
+
+        for (int j = 0; j < 4; ++j) {
+            state[j][i] = b[j];
+        }
+    }
+}
+
+/**
+ * Expanded the key. Splits the plaintext into 128-bit blocks, which are
+ * converted into 4x4 byte matrices. Each of the state matrices are encrypted
+ * using the expanded key and placed into the ciphertext buffer.
+ *
+ * \param[in] key Encryption key.
+ * \param[in] plaintext File to be encrypted.
+ * \param[in] byte_count Number of bytes in ciphertext.
+ * \param[out] ciphertext Encrypted data.
+ * \return Number of encrypted bytes.
+ */
+size_t aes_encrypt(uint8_t key[16], FILE* plaintext, size_t byte_count,
+    uint8_t* ciphertext) {
+    rewind(plaintext);
+    memset(ciphertext, 0, byte_count);
+
+    uint32_t expanded[44] = { 0 };
+    expand_key(key, expanded);
+
+    size_t offset = 0;
+    while (offset + 16 <= byte_count) {
+        uint8_t bytes[16] = { 0 };
+        const size_t read_count = fread(bytes, sizeof(uint8_t), 16, plaintext);
+
+        const uint8_t pad_value = 16 - (uint8_t) read_count;
+        for (size_t i = read_count; i < 16; ++i) {
+            bytes[i] = pad_value;
+        }
+
+        uint8_t state[4][4];
+        bytes_to_state(bytes, state);
+
+        add_round_key(state, expanded, 0);
+
+        for (int i = 1; i < 10; ++i) {
+            sub_bytes(state);
+            shift_rows(state);
+            mix_columns(state);
+            add_round_key(state, expanded, i);
+        }
+
+        sub_bytes(state);
+        shift_rows(state);
+        add_round_key(state, expanded, 10);
+
+        state_to_bytes(state, ciphertext + offset);
+
+        offset += 16;
+
+        if (read_count < 16) {
+            break;
+        }
+    }
+
+    return offset;
 }

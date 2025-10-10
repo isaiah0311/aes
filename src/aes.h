@@ -9,14 +9,18 @@
 #define AES_HEADER
 
 #include <stdint.h>
+#include <stdio.h>
 
 /**
- * Performs key expansion, creating a 176-byte (44-word) value from a 128-bit
- * key.
+ * Encrypts a file using AES.
  * 
- * \param[in] key 128-bit key.
- * \param[out] expanded 44-word expanded key.
+ * \param[in] key Encryption key.
+ * \param[in] plaintext File to be encrypted.
+ * \param[in] byte_count Number of bytes in ciphertext.
+ * \param[out] ciphertext Encrypted data.
+ * \return Number of encrypted bytes.
  */
-void expand_key(uint8_t key[16], uint32_t expanded[44]);
+size_t aes_encrypt(uint8_t key[16], FILE* plaintext, size_t byte_count,
+    uint8_t* ciphertext);
 
 #endif
