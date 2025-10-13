@@ -59,8 +59,17 @@ Launch" to use GDB from the drop-down menu.
 5. Select a platform.
 ### Command Line
 1. Navigate to the root of the project.
-2. Run `bin\{ debug | release }\{ x86 | x64 }\aes.exe` if you are on Windows or
-`./bin/{ debug | release }\{ x86 | x64 }/aes` if you are on Linux.
+2. Run `bin\{ debug | release }\{ x86 | x64 }\aes.exe [ -d { enc | dec } ]
+-k key -i input_file [ -o output_file ]` if you are on Windows or
+`./bin/{ debug | release }\{ x86 | x64 }/aes [ -d { enc | dec } ] -k key
+-i input_file [ -o output_file ]` if you are on Linux.
+
+
+**Note:** A plaintext and a ciphertext file has been provided in the resource
+folder. If no direction is given, encryption is assumed. If no output file is
+given, the program will print the output instead. If run in VS Code, the program
+encrypts res/plaintext.txt and places the output into res/ciphertext.aes using a
+default key.
 
 ## License
 This project is licensed under the [MIT License](LICENSE).
