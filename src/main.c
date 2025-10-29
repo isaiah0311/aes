@@ -26,10 +26,15 @@ int main(int argc, const char** argv) {
         DIRECTION_DECRYPT
     };
 
+    enum mode { MODE_UNDEFINED, MODE_ECB, MODE_CBC };
+
     bool exit = false;
     enum direction direction = DIRECTION_UNDEFINED;
+    enum mode mode = MODE_UNDEFINED;
     uint8_t key[16] = { 0 };
     bool set_key = false;
+    uint8_t iv[16] = { 0 };
+    bool set_iv = false;
     FILE* in_file = NULL;
     FILE* out_file = NULL;
 
@@ -47,6 +52,26 @@ int main(int argc, const char** argv) {
                     direction = DIRECTION_DECRYPT;
                 } else {
                     fprintf(stderr, "[ERROR] Direction is invalid\n");
+                }
+
+                ++i;
+            } else {
+                fprintf(stderr, "[ERROR] Missing direction value after -m.\n");
+                exit = true;
+                break;
+            }
+        } else if (strcmp(argv[i], "-m") == 0) {
+            if (mode != MODE_UNDEFINED) {
+                fprintf(stderr, "[ERROR] Multiple mode values were given.\n");
+                exit = true;
+                break;
+            } else if (i + 1 < argc) {
+                if (strcmp(argv[i + 1], "ecb") == 0) {
+                    mode = MODE_ECB;
+                } else if (strcmp(argv[i + 1], "cbc") == 0) {
+                    mode = MODE_CBC;
+                } else {
+                    fprintf(stderr, "[ERROR] Mode is invalid\n");
                 }
 
                 ++i;
@@ -96,6 +121,50 @@ int main(int argc, const char** argv) {
                 ++i;
             } else {
                 fprintf(stderr, "[ERROR] Missing key value after -k.\n");
+                exit = true;
+                break;
+            }
+        } else if (strcmp(argv[i], "-v") == 0) {
+            if (set_iv) {
+                fprintf(stderr, "[ERROR] Multiple IV values were given.\n");
+                exit = true;
+                break;
+            } else if (i + 1 < argc) {
+                const char* hex = argv[i + 1];
+                const size_t char_count = strlen(hex);
+
+                if (char_count > 34) {
+                    fprintf(stderr, "[ERROR] IV is too long.\n");
+                    exit = true;
+                    break;
+                }
+
+                size_t byte_count = char_count / 2;
+                if (byte_count > 16) {
+                    hex += (byte_count - 16) * 2;
+                    byte_count = 16;
+                }
+
+                for (size_t j = 0; j < byte_count; ++j) {
+                    const char bytes[3] = { hex[j * 2], hex[j * 2 + 1], '\0' };
+                    char* endptr = NULL;
+                    key[16 - byte_count + j] = (uint8_t) strtoul(bytes, &endptr,
+                        16);
+                    if (endptr == hex) {
+                        fprintf(stderr, "[ERROR] IV is not a valid number.\n");
+                        exit = true;
+                        break;
+                    }
+                }
+
+                if (exit) {
+                    break;
+                }
+
+                set_iv = true;
+                ++i;
+            } else {
+                fprintf(stderr, "[ERROR] Missing IV value after -v.\n");
                 exit = true;
                 break;
             }
@@ -166,6 +235,12 @@ int main(int argc, const char** argv) {
         return EXIT_FAILURE;
     }
 
+    if (MODE_CBC && !set_iv) {
+        for (int i = 0; i < 16; ++i) {
+            iv[i] = rand() % UINT8_MAX;
+        }
+    }
+
     long byte_count = 0;
     size_t bytes_written = 0;
 
@@ -173,7 +248,7 @@ int main(int argc, const char** argv) {
     case DIRECTION_UNDEFINED:
     case DIRECTION_ENCRYPT:
         fseek(in_file, 0, SEEK_END);
-        byte_count = ((ftell(in_file) / 16) + 1) * 16;
+        byte_count = ((ftell(in_file) / 8) + 1) * 8;
         uint8_t* ciphertext = malloc(byte_count);
         if (!ciphertext) {
             fprintf(stderr,
@@ -183,7 +258,17 @@ int main(int argc, const char** argv) {
             return EXIT_FAILURE;
         }
 
-        bytes_written = aes_encrypt(key, in_file, byte_count, ciphertext);
+        switch (mode) {
+        case MODE_UNDEFINED:
+        case MODE_ECB:
+            bytes_written = aes_ecb_encrypt(key, in_file, byte_count,
+                ciphertext);
+            break;
+        case MODE_CBC:
+            bytes_written = aes_cbc_encrypt(key, iv, in_file, byte_count,
+                ciphertext);
+            break;
+        }
 
         if (out_file) {
             fwrite(ciphertext, sizeof(uint8_t), bytes_written, out_file);
@@ -209,7 +294,17 @@ int main(int argc, const char** argv) {
             return EXIT_FAILURE;
         }
 
-        bytes_written = aes_decrypt(key, in_file, byte_count, plaintext);
+        switch (mode) {
+        case MODE_UNDEFINED:
+        case MODE_ECB:
+            bytes_written = aes_ecb_decrypt(key, in_file, byte_count,
+                plaintext);
+            break;
+        case MODE_CBC:
+            bytes_written = aes_cbc_decrypt(key, iv, in_file, byte_count,
+                plaintext);
+            break;
+        }
 
         if (out_file) {
             fwrite(plaintext, sizeof(uint8_t), bytes_written, out_file);

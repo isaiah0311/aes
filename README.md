@@ -1,6 +1,9 @@
 # AES
 An implementation of AES in C.
 
+## Overview
+Encrypts and decrypts files using AES in either ECB or CBC mode.
+
 ## Project Structure
 ```text
 ├── .vscode                    <- Settings and configurations
@@ -60,16 +63,18 @@ Launch" to use GDB from the drop-down menu.
 ### Command Line
 1. Navigate to the root of the project.
 2. Run `bin\{ debug | release }\{ x86 | x64 }\aes.exe [ -d { enc | dec } ]
--k key -i input_file [ -o output_file ]` if you are on Windows or
-`./bin/{ debug | release }\{ x86 | x64 }/aes [ -d { enc | dec } ] -k key
--i input_file [ -o output_file ]` if you are on Linux.
+[ -m { ecb | cbc } ] -k key [ -v iv ] -i input_file [ -o output_file ]` if you
+are on Windows or `./bin/{ debug | release }\{ x86 | x64 }/aes
+[ -d { enc | dec } ] [ -m { ecb | cbc } ] -k key [ -v iv ] -i input_file
+[ -o output_file ]` if you are on Linux.
 
 
 **Note:** A plaintext and a ciphertext file has been provided in the resource
-folder. If no direction is given, encryption is assumed. If no output file is
-given, the program will print the output instead. If run in VS Code, the program
-encrypts res/plaintext.txt and places the output into res/ciphertext.aes using a
-default key.
+folder. If no direction is given, encryption is assumed. If no mode is given,
+ECB is assumed. If no output file is given, the program will print the output
+instead. If no IV is provided in CBC mode, one is generated at random. If run in
+VS Code, the program encrypts res/plaintext.txt and places the output into
+res/ciphertext.aes using a default key.
 
 ## License
 This project is licensed under the [MIT License](LICENSE).

@@ -319,7 +319,7 @@ static void inv_mix_columns(uint8_t state[4][4]) {
  * \param[out] ciphertext Encrypted data.
  * \return Number of encrypted bytes.
  */
-size_t aes_encrypt(uint8_t key[16], FILE* plaintext, size_t byte_count,
+size_t aes_ecb_encrypt(uint8_t key[16], FILE* plaintext, size_t byte_count,
     uint8_t* ciphertext) {
     rewind(plaintext);
     memset(ciphertext, 0, byte_count);
@@ -366,6 +366,73 @@ size_t aes_encrypt(uint8_t key[16], FILE* plaintext, size_t byte_count,
 }
 
 /**
+ * Expands the key. Splits the plaintext into 128-bit blocks, which are
+ * converted into 4x4 byte matrices. Each of the state matrices are encrypted
+ * using the expanded key and placed into the ciphertext buffer.
+ *
+ * \param[in] key Encryption key.
+ * \param[in] iv Initialization vector.
+ * \param[in] plaintext File to be encrypted.
+ * \param[in] byte_count Number of bytes in ciphertext.
+ * \param[out] ciphertext Encrypted data.
+ * \return Number of encrypted bytes.
+ */
+size_t aes_cbc_encrypt(uint8_t key[16], uint8_t iv[16], FILE* plaintext,
+    size_t byte_count, uint8_t* ciphertext) {
+    rewind(plaintext);
+    memset(ciphertext, 0, byte_count);
+
+    uint32_t expanded[44] = { 0 };
+    expand_key(key, expanded);
+
+    uint8_t previous[16];
+    memcpy(previous, iv, 16);
+
+    size_t offset = 0;
+    while (offset + 16 <= byte_count) {
+        uint8_t bytes[16] = { 0 };
+        const size_t read_count = fread(bytes, sizeof(uint8_t), 16, plaintext);
+
+        const uint8_t pad_value = 16 - (uint8_t) read_count;
+        for (size_t i = read_count; i < 16; ++i) {
+            bytes[i] = pad_value;
+        }
+
+        for (size_t i = 0; i < 16; ++i) {
+            bytes[i] ^= previous[i];
+        }
+
+        uint8_t state[4][4];
+        bytes_to_state(bytes, state);
+
+        add_round_key(state, expanded, 0);
+
+        for (int i = 1; i < 10; ++i) {
+            sub_bytes(state);
+            shift_rows(state);
+            mix_columns(state);
+            add_round_key(state, expanded, i);
+        }
+
+        sub_bytes(state);
+        shift_rows(state);
+        add_round_key(state, expanded, 10);
+
+        state_to_bytes(state, ciphertext + offset);
+
+        memcpy(previous, ciphertext + offset, 16);
+
+        offset += 16;
+
+        if (read_count < 16) {
+            break;
+        }
+    }
+
+    return offset;
+}
+
+/**
  * Expands the key. Splits the ciphertext into 128-bit blocks, which are
  * converted into 4x4 byte matrices. Each of the state matrices are decrypted
  * using the expanded key and placed into the plaintext buffer.
@@ -376,7 +443,7 @@ size_t aes_encrypt(uint8_t key[16], FILE* plaintext, size_t byte_count,
  * \param[out] plaintext Decrypted data.
  * \return Number of decrypted bytes.
  */
-size_t aes_decrypt(uint8_t key[16], FILE* ciphertext, size_t byte_count,
+size_t aes_ecb_decrypt(uint8_t key[16], FILE* ciphertext, size_t byte_count,
     uint8_t* plaintext) {
     rewind(ciphertext);
     memset(plaintext, 0, byte_count);
@@ -409,6 +476,74 @@ size_t aes_decrypt(uint8_t key[16], FILE* ciphertext, size_t byte_count,
         add_round_key(state, expanded, 0);
 
         state_to_bytes(state, plaintext + offset);
+
+        offset += 16;
+    }
+
+    if (offset > 0) {
+        const uint8_t pad_value = plaintext[offset - 1];
+        if (pad_value > 0 && pad_value <= 16) {
+            offset -= pad_value;
+        }
+    }
+
+    return offset;
+}
+
+/**
+ * Expands the key. Splits the ciphertext into 128-bit blocks, which are
+ * converted into 4x4 byte matrices. Each of the state matrices are decrypted
+ * using the expanded key and placed into the plaintext buffer.
+ *
+ * \param[in] key Encryption key.
+ * \param[in] iv Initialization vector.
+ * \param[in] ciphertext File to be decrypted.
+ * \param[in] byte_count Number of bytes in plaintext.
+ * \param[out] plaintext Decrypted data.
+ * \return Number of decrypted bytes.
+ */
+size_t aes_cbc_decrypt(uint8_t key[16], uint8_t iv[16], FILE* ciphertext,
+    size_t byte_count, uint8_t* plaintext) {
+    rewind(ciphertext);
+    memset(plaintext, 0, byte_count);
+
+    uint32_t expanded[44] = { 0 };
+    expand_key(key, expanded);
+
+    uint8_t previous[16];
+    memcpy(previous, iv, 16);
+
+    size_t offset = 0;
+    while (offset + 16 <= byte_count) {
+        uint8_t bytes[16] = { 0 };
+        const size_t read_count = fread(bytes, sizeof(uint8_t), 16, ciphertext);
+        if (read_count == 0) {
+            break;
+        }
+
+        uint8_t state[4][4];
+        bytes_to_state(bytes, state);
+
+        add_round_key(state, expanded, 10);
+
+        for (int i = 9; i > 0; --i) {
+            inv_shift_rows(state);
+            inv_sub_bytes(state);
+            add_round_key(state, expanded, i);
+            inv_mix_columns(state);
+        }
+
+        inv_shift_rows(state);
+        inv_sub_bytes(state);
+        add_round_key(state, expanded, 0);
+
+        state_to_bytes(state, plaintext + offset);
+
+        for (size_t i = 0; i < 16; ++i) {
+            plaintext[offset + i] ^= previous[i];
+        }
+
+        memcpy(previous, bytes, 16);
 
         offset += 16;
     }
