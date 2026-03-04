@@ -14,6 +14,13 @@ Encrypts and decrypts files using AES in either ECB or CBC mode.
 │   └── release                <- Binaries compiled with optimization
 │       ├── x64                <- 64-bit release binaries
 │       └── x86                <- 32-bit release binaries
+├── obj                        <- Object files
+│   ├── debug                  <- Object files compiled with debugging symbols
+│   │   ├── x64                <- 64-bit debug object files
+│   │   └── x86                <- 32-bit debug object files
+│   └── release                <- Object files compiled with optimization
+│       ├── x64                <- 64-bit release object files
+│       └── x86                <- 32-bit release object files
 ├── res                        <- Resource files
 ├── src                        <- Source files
 ├── .clang-format              <- Coding format file
