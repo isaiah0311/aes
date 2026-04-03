@@ -5,7 +5,7 @@ An implementation of AES in C.
 Encrypts and decrypts files using AES in either ECB or CBC mode.
 
 ## Project Structure
-```text
+```
 ├── .vscode                    <- Settings and configurations
 ├── bin                        <- Compiled binaries
 │   ├── debug                  <- Binaries compiled with debugging symbols
@@ -33,11 +33,11 @@ Encrypts and decrypts files using AES in either ECB or CBC mode.
 
 ## Dependencies
 ### Windows
-- **Compiler:** Microsoft Visual Studio Build Tools 2022 (MSVC)
-- **Build System:** `msbuild`
+- **Compiler:** Microsoft Visual Studio
+- **Build System:** msbuild
 ### Linux
-- **Compiler:** GCC
-- **Build System:** `make`
+- **Compiler:** gcc
+- **Build System:** make
 
 ## How to Build
 ### VS Code
