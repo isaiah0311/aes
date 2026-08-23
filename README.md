@@ -7,81 +7,53 @@ Encrypts and decrypts files using AES in either ECB or CBC mode.
 ## Project Structure
 ```
 ├── .vscode                    <- Settings and configurations
-├── bin                        <- Compiled binaries
-│   ├── debug                  <- Binaries compiled with debugging symbols
-│   │   ├── x64                <- 64-bit debug binaries
-│   │   └── x86                <- 32-bit debug binaries
-│   └── release                <- Binaries compiled with optimization
-│       ├── x64                <- 64-bit release binaries
-│       └── x86                <- 32-bit release binaries
-├── obj                        <- Object files
-│   ├── debug                  <- Object files compiled with debugging symbols
-│   │   ├── x64                <- 64-bit debug object files
-│   │   └── x86                <- 32-bit debug object files
-│   └── release                <- Object files compiled with optimization
-│       ├── x64                <- 64-bit release object files
-│       └── x86                <- 32-bit release object files
+├── build                      <- Compiled binaries and build artifacts
 ├── res                        <- Resource files
 ├── src                        <- Source files
-├── .clang-format              <- Coding format file
-├── .gitignore                 <- Repository ignores
-├── aes.vcxproj                <- Build instructions for msbuild
-├── LICENSE                    <- License
-├── Makefile                   <- Build instructions for make
-└── README.md                  <- You are here
+├── .gitignore
+├── CMakeLists.txt
+├── LICENSE
+└── README.md
 ```
 
 ## Dependencies
-### Windows
-- **Compiler:** Microsoft Visual Studio
-- **Build System:** msbuild
-### Linux
-- **Compiler:** gcc
-- **Build System:** make
+### Build Systems
+- **CMake:** Version 3.10+
+### Extensions
+- *C/C++:* `ms-vscode.cpptools`
+- *C/C++ DevTools:* `ms-vscode.cpp-devtools`
+- *CMake Tools:* `ms-vscode.cmake-tools`
 
 ## How to Build
 ### VS Code
-1. Press Ctrl + Shift + B to open the build menu.
-2. Select "Build".
-3. Select a configuration.
-4. Select a platform.
-
-
-**Note:** If you are using `msbuild`, start VS Code from the Developer Command
-Prompt to set up the environment. Open the Developer Command Prompt, then type
-`code`.
+1. Press `Ctrl + Shift + B` to open the build menu.
+2. Select `CMake: Build` or `CMake: Clean Rebuild`.
 ### Command Line
 1. Navigate to the root of the project.
-2. Run either
-`msbuild /p:Configuration={ Debug | Release } /p:Platform={ Win32 | x64 }` or
-`make CONFIGURATION={ debug | release } PLATFORM={ x86 | x64 }`.
-
-
-**Note:** If you are using `msbuild`, run it from the Developer Command Prompt.
+2. Run `cmake -B build`.
+3. Run `cmake --build build --config <config>` or
+`cmake --build build --config <config> --clean-first`
 
 ## How to Run
 ### VS Code
-1. Press Ctrl + Shift + D to open the run and debug menu.
-2. Select "(Windows) Launch" to use the Visual Studio Debugger, or "(gdb)
-Launch" to use GDB from the drop-down menu.
-3. Press F5 or the green play button to the left of the drop-down menu.
-4. Select a configuration.
-5. Select a platform.
+1. Press `Ctrl + Shift + D` to open the run and debug menu.
+2. From the drop-down menu, select `(Windows) Launch` to use the Visual Studio
+Debugger, or `(gdb) Launch` to use GDB.
+3. Press `F5` or the green play button to the left of the drop-down menu.
 ### Command Line
 1. Navigate to the root of the project.
-2. Run `bin\{ debug | release }\{ x86 | x64 }\aes.exe [ -d { enc | dec } ]
-[ -m { ecb | cbc } ] -k key [ -v iv ] -i input_file [ -o output_file ]` if you
-are on Windows or `./bin/{ debug | release }\{ x86 | x64 }/aes
-[ -d { enc | dec } ] [ -m { ecb | cbc } ] -k key [ -v iv ] -i input_file
-[ -o output_file ]` if you are on Linux.
+2. Run the executable found in the `build` directory. To set the direction, use
+`-d` with `enc` or `dec`. If direction is not set, the default is `enc`. To set
+the mode, use `-m` with `ecb` or `cbc`. If mode is not set, the default is
+`ecb`. To set the key, use `-k <key>`. To set the IV, use `-v`. If IV is not set
+and the mode is `cbc`, an IV will be generated. To set the input file, use
+`-i <file_path>`. To set an output file, use `-o <file_path>`. If no output file
+is defined, then the output is displayed in the terminal instead.
 
 
-**Note:** A plaintext and a ciphertext file has been provided in the resource
-folder. If no direction is given, encryption is assumed. If no mode is given,
-ECB is assumed. If no output file is given, the program will print the output
-instead. If no IV is provided in CBC mode, one is generated at random. If run in
-VS Code, the program encrypts res/plaintext.txt and places the output into
-res/ciphertext.aes using a default key.
+**Note:** A plaintext and a ciphertext file have been provided in the `res`
+folder. If run in VS Code, the program encrypts `res/plaintext.txt` and places
+the output into `res/ciphertext.aes` using a default key.
 
 ## License
 This project is licensed under the [MIT License](LICENSE).
