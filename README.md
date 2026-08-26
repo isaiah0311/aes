@@ -20,9 +20,9 @@ Encrypts and decrypts files using AES in either ECB or CBC mode.
 ### Build Systems
 - **CMake:** Version 3.10+
 ### Extensions
-- *C/C++:* `ms-vscode.cpptools`
-- *C/C++ DevTools:* `ms-vscode.cpp-devtools`
-- *CMake Tools:* `ms-vscode.cmake-tools`
+- **C/C++:** `ms-vscode.cpptools`
+- **C/C++ DevTools:** `ms-vscode.cpp-devtools`
+- **CMake Tools:** `ms-vscode.cmake-tools`
 
 ## How to Build
 ### VS Code
