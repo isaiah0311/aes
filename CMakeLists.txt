@@ -19,9 +19,7 @@ if(MSVC)
         /MP
     )
 
-    target_compile_definitions(${PROJECT_NAME} PRIVATE
-        _CRT_SECURE_NO_WARNINGS
-    )
+    target_compile_definitions(${PROJECT_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS)
 else()
     target_compile_options(${PROJECT_NAME} PRIVATE
         -Wall
