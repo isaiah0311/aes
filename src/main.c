@@ -5,9 +5,11 @@
  * Entry point for the project.
  */
 
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "aes.h"
 
@@ -28,7 +30,7 @@ int main(int argc, const char** argv) {
 
     enum mode { MODE_UNDEFINED, MODE_ECB, MODE_CBC };
 
-    bool exit = false;
+    bool should_exit = false;
     enum direction direction = DIRECTION_UNDEFINED;
     enum mode mode = MODE_UNDEFINED;
     uint8_t key[16] = { 0 };
@@ -43,7 +45,7 @@ int main(int argc, const char** argv) {
             if (direction != DIRECTION_UNDEFINED) {
                 fprintf(stderr,
                     "[ERROR] Multiple direction values were given.\n");
-                exit = true;
+                should_exit = true;
                 break;
             } else if (i + 1 < argc) {
                 if (strcmp(argv[i + 1], "enc") == 0) {
@@ -52,18 +54,20 @@ int main(int argc, const char** argv) {
                     direction = DIRECTION_DECRYPT;
                 } else {
                     fprintf(stderr, "[ERROR] Direction is invalid\n");
+                    should_exit = true;
+                    break;
                 }
 
                 ++i;
             } else {
-                fprintf(stderr, "[ERROR] Missing direction value after -m.\n");
-                exit = true;
+                fprintf(stderr, "[ERROR] Missing direction value after -d.\n");
+                should_exit = true;
                 break;
             }
         } else if (strcmp(argv[i], "-m") == 0) {
             if (mode != MODE_UNDEFINED) {
                 fprintf(stderr, "[ERROR] Multiple mode values were given.\n");
-                exit = true;
+                should_exit = true;
                 break;
             } else if (i + 1 < argc) {
                 if (strcmp(argv[i + 1], "ecb") == 0) {
@@ -72,18 +76,20 @@ int main(int argc, const char** argv) {
                     mode = MODE_CBC;
                 } else {
                     fprintf(stderr, "[ERROR] Mode is invalid\n");
+                    should_exit = true;
+                    break;
                 }
 
                 ++i;
             } else {
-                fprintf(stderr, "[ERROR] Missing direction value after -m.\n");
-                exit = true;
+                fprintf(stderr, "[ERROR] Missing mode value after -m.\n");
+                should_exit = true;
                 break;
             }
         } else if (strcmp(argv[i], "-k") == 0) {
             if (set_key) {
                 fprintf(stderr, "[ERROR] Multiple key values were given.\n");
-                exit = true;
+                should_exit = true;
                 break;
             } else if (i + 1 < argc) {
                 const char* hex = argv[i + 1];
@@ -91,7 +97,7 @@ int main(int argc, const char** argv) {
 
                 if (char_count > 34) {
                     fprintf(stderr, "[ERROR] Key is too long.\n");
-                    exit = true;
+                    should_exit = true;
                     break;
                 }
 
@@ -108,12 +114,12 @@ int main(int argc, const char** argv) {
                         16);
                     if (endptr == hex) {
                         fprintf(stderr, "[ERROR] Key is not a valid number.\n");
-                        exit = true;
+                        should_exit = true;
                         break;
                     }
                 }
 
-                if (exit) {
+                if (should_exit) {
                     break;
                 }
 
@@ -121,13 +127,13 @@ int main(int argc, const char** argv) {
                 ++i;
             } else {
                 fprintf(stderr, "[ERROR] Missing key value after -k.\n");
-                exit = true;
+                should_exit = true;
                 break;
             }
         } else if (strcmp(argv[i], "-v") == 0) {
             if (set_iv) {
                 fprintf(stderr, "[ERROR] Multiple IV values were given.\n");
-                exit = true;
+                should_exit = true;
                 break;
             } else if (i + 1 < argc) {
                 const char* hex = argv[i + 1];
@@ -135,7 +141,7 @@ int main(int argc, const char** argv) {
 
                 if (char_count > 34) {
                     fprintf(stderr, "[ERROR] IV is too long.\n");
-                    exit = true;
+                    should_exit = true;
                     break;
                 }
 
@@ -148,16 +154,16 @@ int main(int argc, const char** argv) {
                 for (size_t j = 0; j < byte_count; ++j) {
                     const char bytes[3] = { hex[j * 2], hex[j * 2 + 1], '\0' };
                     char* endptr = NULL;
-                    key[16 - byte_count + j] = (uint8_t) strtoul(bytes, &endptr,
+                    iv[16 - byte_count + j] = (uint8_t) strtoul(bytes, &endptr,
                         16);
                     if (endptr == hex) {
                         fprintf(stderr, "[ERROR] IV is not a valid number.\n");
-                        exit = true;
+                        should_exit = true;
                         break;
                     }
                 }
 
-                if (exit) {
+                if (should_exit) {
                     break;
                 }
 
@@ -165,47 +171,47 @@ int main(int argc, const char** argv) {
                 ++i;
             } else {
                 fprintf(stderr, "[ERROR] Missing IV value after -v.\n");
-                exit = true;
+                should_exit = true;
                 break;
             }
         } else if (strcmp(argv[i], "-i") == 0) {
             if (in_file) {
                 fprintf(stderr,
                     "[ERROR] Multiple input file values were given.\n");
-                exit = true;
+                should_exit = true;
                 break;
             } else if (i + 1 < argc) {
-                in_file = fopen(argv[i + 1], "r");
+                in_file = fopen(argv[i + 1], "rb");
                 if (!in_file) {
                     fprintf(stderr, "[ERROR] Failed to open input file.\n");
-                    exit = true;
+                    should_exit = true;
                     break;
                 }
 
                 ++i;
             } else {
                 fprintf(stderr, "[ERROR] Missing input file path after -i.\n");
-                exit = true;
+                should_exit = true;
                 break;
             }
         } else if (strcmp(argv[i], "-o") == 0) {
             if (out_file) {
                 fprintf(stderr,
                     "[ERROR] Multiple output file values were given.\n");
-                exit = true;
+                should_exit = true;
                 break;
             } else if (i + 1 < argc) {
-                out_file = fopen(argv[i + 1], "w");
+                out_file = fopen(argv[i + 1], "wb");
                 if (!out_file) {
                     fprintf(stderr, "[ERROR] Failed to open output file.\n");
-                    exit = true;
+                    should_exit = true;
                     break;
                 }
 
                 ++i;
             } else {
                 fprintf(stderr, "[ERROR] Missing output file path after -o.\n");
-                exit = true;
+                should_exit = true;
                 break;
             }
         } else {
@@ -213,17 +219,17 @@ int main(int argc, const char** argv) {
         }
     }
 
-    if (!exit) {
+    if (!should_exit) {
         if (!set_key) {
             fprintf(stderr, "[ERROR] No key was given.\n");
-            exit = true;
+            should_exit = true;
         } else if (!in_file) {
             fprintf(stderr, "[ERROR] No input file was given.\n");
-            exit = true;
+            should_exit = true;
         }
     }
 
-    if (exit) {
+    if (should_exit) {
         if (in_file) {
             fclose(in_file);
         }
@@ -235,10 +241,18 @@ int main(int argc, const char** argv) {
         return EXIT_FAILURE;
     }
 
-    if (MODE_CBC && !set_iv) {
+    if (mode == MODE_CBC && !set_iv) {
+        srand((unsigned int) time(NULL));
         for (int i = 0; i < 16; ++i) {
-            iv[i] = rand() % UINT8_MAX;
+            iv[i] = rand() % (UINT8_MAX + 1);
         }
+
+        printf("[INFO] Generated IV: 0x");
+        for (int i = 0; i < 16; ++i) {
+            printf("%02X", iv[i]);
+        }
+        
+        printf("\n");
     }
 
     long byte_count = 0;
@@ -248,7 +262,7 @@ int main(int argc, const char** argv) {
     case DIRECTION_UNDEFINED:
     case DIRECTION_ENCRYPT:
         fseek(in_file, 0, SEEK_END);
-        byte_count = ((ftell(in_file) / 8) + 1) * 8;
+        byte_count = ((ftell(in_file) / 16) + 1) * 16;
         uint8_t* ciphertext = malloc(byte_count);
         if (!ciphertext) {
             fprintf(stderr,
@@ -280,6 +294,8 @@ int main(int argc, const char** argv) {
 
             printf("\n");
         }
+
+        free(ciphertext);
 
         break;
     case DIRECTION_DECRYPT:
@@ -316,6 +332,8 @@ int main(int argc, const char** argv) {
 
             printf("\n");
         }
+        
+        free(plaintext);
 
         break;
     }

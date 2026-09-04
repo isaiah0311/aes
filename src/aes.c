@@ -7,6 +7,7 @@
 
 #include "aes.h"
 
+#include <stdbool.h>
 #include <string.h>
 
 static const uint8_t s[256] = { 0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5,
@@ -482,7 +483,18 @@ size_t aes_ecb_decrypt(uint8_t key[16], FILE* ciphertext, size_t byte_count,
 
     if (offset > 0) {
         const uint8_t pad_value = plaintext[offset - 1];
-        if (pad_value > 0 && pad_value <= 16) {
+
+        bool padding = pad_value > 0 && pad_value <= 16 && pad_value <= offset;
+        if (padding) {
+            for (size_t i = 0; i < pad_value; ++i) {
+                if (plaintext[offset - 1 - i] != pad_value) {
+                    padding = false;
+                    break;
+                }
+            }
+        }
+
+        if (padding) {
             offset -= pad_value;
         }
     }
@@ -550,7 +562,18 @@ size_t aes_cbc_decrypt(uint8_t key[16], uint8_t iv[16], FILE* ciphertext,
 
     if (offset > 0) {
         const uint8_t pad_value = plaintext[offset - 1];
-        if (pad_value > 0 && pad_value <= 16) {
+
+        bool padding = pad_value > 0 && pad_value <= 16 && pad_value <= offset;
+        if (padding) {
+            for (size_t i = 0; i < pad_value; ++i) {
+                if (plaintext[offset - 1 - i] != pad_value) {
+                    padding = false;
+                    break;
+                }
+            }
+        }
+
+        if (padding) {
             offset -= pad_value;
         }
     }

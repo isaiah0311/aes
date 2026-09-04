@@ -1,0 +1,3 @@
+* text=auto
+res/plaintext.txt -text
+res/ciphertext.aes -text
