@@ -7,9 +7,20 @@ Encrypts and decrypts files using AES in either ECB or CBC mode.
 ## Project Structure
 ```
 ├── .vscode                    <- Settings and configurations
+│   ├── c_cpp_properties.json
+│   ├── extensions.json
+│   ├── launch.json
+│   ├── settings.json
+│   └── tasks.json
 ├── build                      <- Compiled binaries and build artifacts
+│   └── ...
 ├── res                        <- Resource files
+│   ├── ciphertext.aes
+│   └── plaintext.txt
 ├── src                        <- Source files
+│   ├── aes.c
+│   ├── aes.h
+│   └── main.c
 ├── .gitattributes
 ├── .gitignore
 ├── CMakeLists.txt
